@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>林丹宿舍杯 - 云同步版</title>
+    <title>1314 林丹杯 - 云同步版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ================= 主题变量与 CSS (完全保留之前的精美设计) ================= */
+        /* ================= 主题变量与 CSS ================= */
         :root {
             --bg-color: #F8F6F4; --card-bg: #FFFFFF; --primary-yellow: #FFC107;
             --btn-dark: #1A1C29; --text-main: #333333; --text-muted: #888888;
@@ -103,6 +103,48 @@
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--text-main); font-size: 18px; font-weight: bold; }
         .spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--primary-yellow); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* ================= 响应式布局 (手机端完美适配) ================= */
+        /* 屏幕宽度小于 1000px 时，改为单列排列 */
+        @media (max-width: 1000px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .bottom-row { grid-template-columns: 1fr; }
+        }
+
+        /* 屏幕宽度小于 768px (手机端) 时的深度优化 */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto;} /* 允许整个页面在手机端滚动 */
+            
+            /* 1. 侧边栏变成手机底部的“App导航栏” */
+            .sidebar {
+                position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+                flex-direction: row; justify-content: space-evenly; align-items: center;
+                padding: 0; border-right: none; border-top: 1px solid var(--border-color);
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 999;
+            }
+            .logo { display: none; } /* 手机端隐藏侧边栏的文字Logo */
+            .season-btn { margin-bottom: 0; height: 36px; padding: 0 10px; width: auto; }
+            .season-btn .season-lbl { display: none; } /* 按钮变小，只留年份 */
+            .nav-icon { margin-bottom: 0; }
+            
+            /* 2. 加号按钮变成右下角的“悬浮大按钮” */
+            .add-btn { 
+                position: fixed; bottom: 80px; right: 20px; 
+                width: 56px; height: 56px; 
+                box-shadow: 0 4px 15px rgba(255, 193, 7, 0.6); 
+                z-index: 1000;
+            }
+            .clear-btn { position: static; }
+
+            /* 3. 主内容区调整，防止被底部导航栏挡住 */
+            .main-content { padding: 15px; padding-bottom: 90px; height: auto; overflow: visible;}
+            .header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 15px;}
+            
+            /* 4. 弹窗和表单在手机上横向太挤，改为全部纵向排列 */
+            .modal { width: 90%; padding: 20px; }
+            .form-row { flex-direction: column; gap: 10px; }
+            .team-box { padding: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -113,7 +155,7 @@
     </div>
 
     <aside class="sidebar">
-        <div class="logo">林丹<br>宿舍杯</div>
+        <div class="logo">1314<br>林丹杯</div>
         <div class="season-btn" onclick="openSeasonModal()" title="切换/管理赛季">
             <span class="season-year" id="sidebar-season">...</span>
             <span class="season-lbl">赛季</span>
@@ -127,7 +169,7 @@
         <header class="header">
             <div>
                 <h1>羽毛球排行榜 <span style="font-size: 12px; color: #4CAF50; font-weight: normal; background: #E8F5E9; padding: 2px 8px; border-radius: 10px;">☁️ 云端同步已开启</span></h1>
-                <p id="header-desc">林丹宿舍杯 · <span id="header-season" style="color:var(--primary-yellow); font-weight:bold;">加载中...</span></p>
+                <p id="header-desc">1314 林丹杯 · <span id="header-season" style="color:var(--primary-yellow); font-weight:bold;">加载中...</span></p>
             </div>
         </header>
 
@@ -241,7 +283,6 @@
 
     <script>
         // ================= ★★★ 重要配置区 ★★★ =================
-        // 请把这里替换成你在 JSONBin.io 注册获取的 ID 和 Key！
         const BIN_ID = "69a506cbae596e708f56a3d8"; 
         const API_KEY = "$2a$10$kv/w2iDBM/ZKiVgjhI.3BOqYgMhuKIeEgRkv5R3ky8SFlN6wu.ARS";
         // ========================================================
