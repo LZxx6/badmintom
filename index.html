@@ -104,30 +104,31 @@
         .spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--primary-yellow); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* 能力值调节滑动条样式 (已恢复) */
+        .stat-slider-row { display: flex; align-items: center; margin-bottom: 15px; }
+        .stat-slider-row span { width: 40px; font-size: 14px; color: var(--text-muted); }
+        .stat-slider-row input[type=range] { flex: 1; margin: 0 15px; cursor: pointer; }
+        .stat-slider-row .stat-val { width: 30px; font-weight: bold; text-align: right; color: var(--text-main); }
+
         /* ================= 响应式布局 (手机端完美适配) ================= */
-        /* 屏幕宽度小于 1000px 时，改为单列排列 */
         @media (max-width: 1000px) {
             .dashboard-grid { grid-template-columns: 1fr; }
             .bottom-row { grid-template-columns: 1fr; }
         }
 
-        /* 屏幕宽度小于 768px (手机端) 时的深度优化 */
         @media (max-width: 768px) {
-            body { flex-direction: column; overflow-y: auto;} /* 允许整个页面在手机端滚动 */
-            
-            /* 1. 侧边栏变成手机底部的“App导航栏” */
+            body { flex-direction: column; overflow-y: auto;}
             .sidebar {
                 position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
                 flex-direction: row; justify-content: space-evenly; align-items: center;
                 padding: 0; border-right: none; border-top: 1px solid var(--border-color);
                 box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 999;
             }
-            .logo { display: none; } /* 手机端隐藏侧边栏的文字Logo */
+            .logo { display: none; }
             .season-btn { margin-bottom: 0; height: 36px; padding: 0 10px; width: auto; }
-            .season-btn .season-lbl { display: none; } /* 按钮变小，只留年份 */
+            .season-btn .season-lbl { display: none; }
             .nav-icon { margin-bottom: 0; }
             
-            /* 2. 加号按钮变成右下角的“悬浮大按钮” */
             .add-btn { 
                 position: fixed; bottom: 80px; right: 20px; 
                 width: 56px; height: 56px; 
@@ -136,11 +137,9 @@
             }
             .clear-btn { position: static; }
 
-            /* 3. 主内容区调整，防止被底部导航栏挡住 */
             .main-content { padding: 15px; padding-bottom: 90px; height: auto; overflow: visible;}
             .header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 15px;}
             
-            /* 4. 弹窗和表单在手机上横向太挤，改为全部纵向排列 */
             .modal { width: 90%; padding: 20px; }
             .form-row { flex-direction: column; gap: 10px; }
             .team-box { padding: 10px; }
@@ -211,7 +210,7 @@
                                 <div><div id="carousel-wins" class="val">0</div><div class="lbl">胜场</div></div>
                                 <div><div id="carousel-losses" class="val">0</div><div class="lbl">负场</div></div>
                             </div>
-                            <button class="btn-outline" onclick="openProfileFromCarousel()">查看六边形雷达图</button>
+                            <button class="btn-outline" onclick="openProfileFromCarousel()">查看个人资料卡</button>
                         </div>
                         <button class="nav-arrow" onclick="nextPlayer()">❯</button>
                     </div>
@@ -272,12 +271,28 @@
 
     <div class="modal-overlay" id="profileModal">
         <div class="modal" style="width: 500px;">
-            <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-                <div id="profile-avatar" class="avatar" style="width: 56px; height: 56px; font-size: 24px;">-</div>
-                <div><h2 id="profile-name" style="margin: 0;">名字</h2><div id="profile-summary" style="font-size:12px; color:var(--text-muted);">0分</div></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div id="profile-avatar" class="avatar" style="width: 56px; height: 56px; font-size: 24px;">-</div>
+                    <div>
+                        <h2 id="profile-name" style="margin: 0;">名字</h2>
+                        <div id="profile-summary" style="font-size:12px; color:var(--text-muted);">0分</div>
+                    </div>
+                </div>
+                <button onclick="toggleEditStats(true)" style="background:var(--hover-bg); border:1px solid var(--border-color); padding:5px 10px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--text-main);">✏️ 自定义能力值</button>
             </div>
-            <div class="profile-chart-container"><canvas id="radarChart"></canvas></div>
-            <button class="btn-cancel" onclick="document.getElementById('profileModal').style.display='none'">关闭</button>
+            
+            <div id="chartView">
+                <div class="profile-chart-container"><canvas id="radarChart"></canvas></div>
+                <button class="btn-cancel" onclick="document.getElementById('profileModal').style.display='none'">关闭</button>
+            </div>
+
+            <div id="editStatsView" style="display: none; background: var(--list-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <h3 style="font-size: 14px; margin-bottom: 15px; text-align: center;">拖动滑块调整数值 (0-100)</h3>
+                <div id="sliders-container"></div>
+                <button class="btn-submit" onclick="saveCustomStats()" style="margin-top: 15px;">保存能力值</button>
+                <button class="btn-cancel" onclick="toggleEditStats(false)">取消</button>
+            </div>
         </div>
     </div>
 
@@ -287,54 +302,51 @@
         const API_KEY = "$2a$10$kv/w2iDBM/ZKiVgjhI.3BOqYgMhuKIeEgRkv5R3ky8SFlN6wu.ARS";
         // ========================================================
 
-        // 基础数据
-        const basePlayers = [
+        // 基础数据 (从本地获取雷达图自定义数值)
+        const defaultPlayers = [
             { id: 1, name: '龙鑫昊', avatar: '龙', color: '#FFB300', stats: [85, 75, 90, 80, 85, 70] },
             { id: 2, name: '黄玮',   avatar: '黄', color: '#4CAF50', stats: [70, 85, 80, 90, 75, 85] },
             { id: 3, name: '许力群', avatar: '许', color: '#2196F3', stats: [80, 80, 85, 85, 80, 80] },
             { id: 4, name: '林智鑫', avatar: '林', color: '#8D6E63', stats: [90, 65, 85, 75, 90, 70] }
         ];
+        // 雷达图数据缓存在本地，不影响云端赛程
+        let basePlayers = JSON.parse(localStorage.getItem('ld_players_info')) || defaultPlayers;
 
-        // 全局云端数据存储对象
-        let cloudData = {
-            seasons: ["2026"],
-            matches: []
-        };
+        let cloudData = { seasons: ["2026"], matches: [] };
         let currentSeason = "2026";
         let players = [];
         let doublesTeams = [];
-        const POINTS_WIN = 1, POINTS_LOSS = 0; // 最新胜负规则
-        let carouselIndex = 0; let myRadarChart = null;
+        
+        // 【重点更新】：胜一场+1，负一场-1
+        const POINTS_WIN = 1, POINTS_LOSS = -1; 
+        
+        let carouselIndex = 0; 
+        let myRadarChart = null;
+        let viewingPlayerId = null; // 用于雷达图修改
+        const statLabels = ['进攻', '防守', '速度', '体能', '技巧', '心态'];
 
         // ================= 云端通讯核心逻辑 =================
         async function fetchCloudData() {
             if (BIN_ID === "YOUR_BIN_ID_HERE") {
-                alert("请先在代码里填入你的 BIN_ID 和 API_KEY！否则无法连接云端。");
+                alert("请先在代码里填入你的 BIN_ID 和 API_KEY！");
                 document.getElementById('loading-overlay').style.display = 'none';
                 return;
             }
-
             document.getElementById('loading-overlay').style.display = 'flex';
             document.getElementById('loading-text').innerText = "正在拉取云端数据...";
-            
             try {
-                let req = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                    headers: { 'X-Master-Key': API_KEY }
-                });
+                let req = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, { headers: { 'X-Master-Key': API_KEY }});
                 let res = await req.json();
                 if (res.record) {
                     cloudData = res.record;
-                    // 如果本地记过当前赛季，优先显示上次看的赛季
                     currentSeason = localStorage.getItem('ld_current_season') || cloudData.seasons[0];
                     if (!cloudData.seasons.includes(currentSeason)) currentSeason = cloudData.seasons[0];
                     renderApp();
                 }
             } catch (err) {
                 console.error("云同步失败:", err);
-                alert("云端连接失败，请检查网络或 API Key！");
-            } finally {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
+                alert("云端连接失败，请检查网络！");
+            } finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
         async function saveToCloud() {
@@ -347,18 +359,14 @@
                     body: JSON.stringify(cloudData)
                 });
                 renderApp();
-            } catch (err) {
-                alert("保存失败，请重试！");
-            } finally {
-                document.getElementById('loading-overlay').style.display = 'none';
-            }
+            } catch (err) { alert("保存失败，请重试！"); } 
+            finally { document.getElementById('loading-overlay').style.display = 'none'; }
         }
 
-        // ================= 业务逻辑 =================
+        // ================= 业务逻辑 (算分) =================
         function computeRankings() {
             players = basePlayers.map(p => ({ ...p, wins: 0, losses: 0, points: 0 }));
             doublesTeams = [];
-            // 筛选当前赛季的比赛
             const seasonMatches = cloudData.matches.filter(m => m.season === currentSeason);
 
             seasonMatches.forEach(m => {
@@ -385,6 +393,7 @@
             doublesTeams.sort((a, b) => b.points !== a.points ? b.points - a.points : b.wins - a.wins);
         }
 
+        // ================= 渲染层 =================
         function renderApp() {
             computeRankings();
             document.getElementById('sidebar-season').innerText = currentSeason;
@@ -491,7 +500,7 @@
             document.getElementById('matchModal').style.display = 'flex';
         }
 
-        // ================= 辅助函数与初始化 =================
+        // ================= 雷达图修改与辅助函数 =================
         function initSelects() { document.querySelectorAll('.player-select').forEach(sel => sel.innerHTML = basePlayers.map(p => `<option value="${p.id}">${p.name}</option>`).join('')); }
         function switchMatchType(type) { document.getElementById('tab-singles').className = type==='singles'?'active':''; document.getElementById('tab-doubles').className = type==='doubles'?'active':''; const d = type==='doubles'?'block':'none'; document.getElementById('group-playerA2').style.display = d; document.getElementById('group-playerB2').style.display = d; }
         function openMatchModal() { document.getElementById('editingMatchId').value=""; document.getElementById('scoreA').value=""; document.getElementById('scoreB').value=""; document.getElementById('matchDate').valueAsDate=new Date(); switchMatchType('singles'); document.getElementById('playerB1').selectedIndex=1; document.getElementById('matchModal').style.display='flex'; }
@@ -501,8 +510,39 @@
         function nextPlayer() { carouselIndex = (carouselIndex + 1) % players.length; updateCarousel(); }
         function openProfileFromCarousel() { openProfileModal(players[carouselIndex].id); }
         
-        function openProfileModal(id) { const p = players.find(x=>x.id===id); document.getElementById('profile-avatar').innerText=p.avatar; document.getElementById('profile-avatar').style.background=p.color; document.getElementById('profile-name').innerText=p.name; document.getElementById('profile-summary').innerText=`当前赛季: ${p.points}分 | ${p.wins}胜 ${p.losses}负`; renderRadarChart(p); document.getElementById('profileModal').style.display='flex'; }
-        function renderRadarChart(p) { const ctx = document.getElementById('radarChart').getContext('2d'); if(myRadarChart) myRadarChart.destroy(); const isDark = document.documentElement.getAttribute('data-theme')==='dark'; const gColor = isDark?'#444':'#EAEAEA'; const hToR = (hex) => `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`; myRadarChart = new Chart(ctx, { type: 'radar', data: { labels: ['进攻', '防守', '速度', '体能', '技巧', '心态'], datasets: [{ label: '能力', data: p.stats, backgroundColor: `rgba(${hToR(p.color)}, 0.2)`, borderColor: p.color, pointBackgroundColor: p.color }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: gColor }, angleLines: { color: gColor }, pointLabels: { color: isDark?'#AAA':'#555' } } }, plugins: { legend: { display: false } } } }); }
+        function openProfileModal(id) { 
+            viewingPlayerId = id;
+            const p = players.find(x=>x.id===id); 
+            document.getElementById('profile-avatar').innerText=p.avatar; document.getElementById('profile-avatar').style.background=p.color; document.getElementById('profile-name').innerText=p.name; document.getElementById('profile-summary').innerText=`当前赛季: ${p.points}分 | ${p.wins}胜 ${p.losses}负`; 
+            toggleEditStats(false); // 默认展示图表
+            renderRadarChart(p); 
+            document.getElementById('profileModal').style.display='flex'; 
+        }
+
+        // 切换能力值修改视图
+        function toggleEditStats(showEdit) {
+            document.getElementById('chartView').style.display = showEdit ? 'none' : 'block';
+            document.getElementById('editStatsView').style.display = showEdit ? 'block' : 'none';
+            if (showEdit) {
+                const player = basePlayers.find(p => p.id === viewingPlayerId);
+                let html = '';
+                for(let i=0; i<6; i++) {
+                    html += `<div class="stat-slider-row"><span>${statLabels[i]}</span><input type="range" id="stat-input-${i}" min="0" max="100" value="${player.stats[i]}" oninput="document.getElementById('stat-val-${i}').innerText = this.value"><div class="stat-val" id="stat-val-${i}">${player.stats[i]}</div></div>`;
+                }
+                document.getElementById('sliders-container').innerHTML = html;
+            }
+        }
+
+        // 保存自定义能力值
+        function saveCustomStats() {
+            const player = basePlayers.find(p => p.id === viewingPlayerId);
+            for(let i=0; i<6; i++) { player.stats[i] = parseInt(document.getElementById(`stat-input-${i}`).value); }
+            localStorage.setItem('ld_players_info', JSON.stringify(basePlayers)); // 存到本地
+            toggleEditStats(false);
+            openProfileModal(viewingPlayerId); // 刷新重绘
+        }
+
+        function renderRadarChart(p) { const ctx = document.getElementById('radarChart').getContext('2d'); if(myRadarChart) myRadarChart.destroy(); const isDark = document.documentElement.getAttribute('data-theme')==='dark'; const gColor = isDark?'#444':'#EAEAEA'; const hToR = (hex) => `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`; myRadarChart = new Chart(ctx, { type: 'radar', data: { labels: statLabels, datasets: [{ label: '能力', data: p.stats, backgroundColor: `rgba(${hToR(p.color)}, 0.2)`, borderColor: p.color, pointBackgroundColor: p.color }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: gColor }, angleLines: { color: gColor }, pointLabels: { color: isDark?'#AAA':'#555' } } }, plugins: { legend: { display: false } } } }); }
 
         function toggleTheme() { const t = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme', t); localStorage.setItem('ld_theme', t); document.documentElement.style.setProperty('--icon-invert', t==='dark'?'1':'0'); if(document.getElementById('profileModal').style.display==='flex') openProfileModal(players.find(x=>x.name===document.getElementById('profile-name').innerText).id); }
 
