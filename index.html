@@ -68,7 +68,7 @@
         .nav-arrow { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; cursor: pointer; background: var(--card-bg);}
         .carousel-content { text-align: center; flex: 1; }
         .carousel-avatar { width: 70px; height: 70px; border-radius: 50%; font-size: 28px; display: flex; justify-content: center; align-items: center; color: white; margin: 0 auto 12px; }
-        .carousel-stats { display: flex; justify-content: center; gap: 20px; margin: 15px 0; }
+        .carousel-stats { display: flex; justify-content: center; gap: 15px; margin: 15px 0; }
         .carousel-stats .val { font-size: 18px; font-weight: bold; color: var(--text-main); }
         .carousel-stats .lbl { font-size: 12px; color: var(--text-muted); }
         .btn-outline { padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); font-size: 12px; cursor: pointer; }
@@ -208,6 +208,7 @@
                             <div class="carousel-stats">
                                 <div><div id="carousel-points" class="val">0</div><div class="lbl">积分</div></div>
                                 <div><div id="carousel-wins" class="val">0</div><div class="lbl">胜场</div></div>
+                                <div><div id="carousel-draws" class="val">0</div><div class="lbl">平局</div></div>
                                 <div><div id="carousel-losses" class="val">0</div><div class="lbl">负场</div></div>
                             </div>
                             <button class="btn-outline" onclick="openProfileFromCarousel()">查看个人资料卡</button>
@@ -317,7 +318,7 @@
         let players = [];
         let doublesTeams = [];
         
-        // 【重点更新】：胜一场+1，负一场-1
+        // 胜一场+1，负一场-1
         const POINTS_WIN = 1, POINTS_LOSS = -1; 
         
         let carouselIndex = 0; 
@@ -365,7 +366,8 @@
 
         // ================= 业务逻辑 (算分) =================
         function computeRankings() {
-            players = basePlayers.map(p => ({ ...p, wins: 0, losses: 0, points: 0 }));
+            // 初始化新增 draws (平局) 字段
+            players = basePlayers.map(p => ({ ...p, wins: 0, draws: 0, losses: 0, points: 0 }));
             doublesTeams = [];
             const seasonMatches = cloudData.matches.filter(m => m.season === currentSeason);
 
@@ -373,22 +375,41 @@
                 if(m.type === 'singles') {
                     const pA = players.find(p => p.id === m.teamA[0]), pB = players.find(p => p.id === m.teamB[0]);
                     if(pA && pB) {
-                        if(m.scoreA > m.scoreB) { pA.wins++; pA.points+=POINTS_WIN; pB.losses++; pB.points+=POINTS_LOSS; }
-                        else { pB.wins++; pB.points+=POINTS_WIN; pA.losses++; pA.points+=POINTS_LOSS; }
+                        if(m.scoreA > m.scoreB) { 
+                            pA.wins++; pA.points+=POINTS_WIN; 
+                            pB.losses++; pB.points+=POINTS_LOSS; 
+                        } else if (m.scoreA < m.scoreB) { 
+                            pB.wins++; pB.points+=POINTS_WIN; 
+                            pA.losses++; pA.points+=POINTS_LOSS; 
+                        } else {
+                            // 平局：不加分不扣分，平局数加 1
+                            pA.draws++; pB.draws++;
+                        }
                     }
                 } else if(m.type === 'doubles') {
                     const getTeam = (ids) => {
                         const p1 = players.find(p=>p.id===ids[0]), p2 = players.find(p=>p.id===ids[1]);
                         const tName = `${p1.name}/${p2.name}`;
                         let t = doublesTeams.find(t => t.name === tName);
-                        if(!t) { t = { name: tName, wins:0, losses:0, points:0 }; doublesTeams.push(t); }
+                        if(!t) { t = { name: tName, wins:0, draws:0, losses:0, points:0 }; doublesTeams.push(t); }
                         return t;
                     };
                     const tA = getTeam(m.teamA), tB = getTeam(m.teamB);
-                    if(m.scoreA > m.scoreB) { tA.wins++; tA.points+=POINTS_WIN; tB.losses++; tB.points+=POINTS_LOSS; }
-                    else { tB.wins++; tB.points+=POINTS_WIN; tA.losses++; tA.points+=POINTS_LOSS; }
+                    
+                    if(m.scoreA > m.scoreB) { 
+                        tA.wins++; tA.points+=POINTS_WIN; 
+                        tB.losses++; tB.points+=POINTS_LOSS; 
+                    } else if (m.scoreA < m.scoreB) { 
+                        tB.wins++; tB.points+=POINTS_WIN; 
+                        tA.losses++; tA.points+=POINTS_LOSS; 
+                    } else {
+                        // 双打平局
+                        tA.draws++; tB.draws++;
+                    }
                 }
             });
+            
+            // 排序逻辑：积分高者优先，积分相同则胜场多者优先
             players.sort((a, b) => b.points !== a.points ? b.points - a.points : b.wins - a.wins);
             doublesTeams.sort((a, b) => b.points !== a.points ? b.points - a.points : b.wins - a.wins);
         }
@@ -402,14 +423,14 @@
             document.getElementById('singles-ranking-list').innerHTML = players.map((p, i) => `
                 <div class="list-item"><div class="rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
                 <div class="player-info"><div class="avatar" style="background:${p.color};">${p.avatar}</div><span class="player-name" onclick="openProfileModal(${p.id})">${p.name}</span></div>
-                <div class="score-info"><div class="record">${p.wins}胜${p.losses}负</div><div class="points">${p.points}</div></div></div>
+                <div class="score-info"><div class="record">${p.wins}胜${p.draws}平${p.losses}负</div><div class="points">${p.points}</div></div></div>
             `).join('');
 
             document.getElementById('doubles-ranking-list').innerHTML = doublesTeams.length === 0 ? `<div style="text-align:center;color:#999;font-size:12px;padding:20px;">暂无记录</div>` :
                 doublesTeams.map((t, i) => `
                 <div class="list-item"><div class="rank-num ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</div>
                 <div class="player-info"><span class="player-name">${t.name}</span></div>
-                <div class="score-info"><div class="record">${t.wins}胜${t.losses}负</div><div class="points">${t.points}</div></div></div>
+                <div class="score-info"><div class="record">${t.wins}胜${t.draws}平${t.losses}负</div><div class="points">${t.points}</div></div></div>
             `).join('');
 
             const seasonMatches = cloudData.matches.filter(m => m.season === currentSeason).sort((a,b)=>b.id-a.id);
@@ -505,7 +526,17 @@
         function switchMatchType(type) { document.getElementById('tab-singles').className = type==='singles'?'active':''; document.getElementById('tab-doubles').className = type==='doubles'?'active':''; const d = type==='doubles'?'block':'none'; document.getElementById('group-playerA2').style.display = d; document.getElementById('group-playerB2').style.display = d; }
         function openMatchModal() { document.getElementById('editingMatchId').value=""; document.getElementById('scoreA').value=""; document.getElementById('scoreB').value=""; document.getElementById('matchDate').valueAsDate=new Date(); switchMatchType('singles'); document.getElementById('playerB1').selectedIndex=1; document.getElementById('matchModal').style.display='flex'; }
         
-        function updateCarousel() { if(players.length===0)return; const p = players[carouselIndex]; document.getElementById('carousel-avatar').innerText = p.avatar; document.getElementById('carousel-avatar').style.background = p.color; document.getElementById('carousel-name').innerText = p.name; document.getElementById('carousel-points').innerText = p.points; document.getElementById('carousel-wins').innerText = p.wins; document.getElementById('carousel-losses').innerText = p.losses; }
+        function updateCarousel() { 
+            if(players.length===0) return; 
+            const p = players[carouselIndex]; 
+            document.getElementById('carousel-avatar').innerText = p.avatar; 
+            document.getElementById('carousel-avatar').style.background = p.color; 
+            document.getElementById('carousel-name').innerText = p.name; 
+            document.getElementById('carousel-points').innerText = p.points; 
+            document.getElementById('carousel-wins').innerText = p.wins; 
+            document.getElementById('carousel-draws').innerText = p.draws; // 新增平局展示
+            document.getElementById('carousel-losses').innerText = p.losses; 
+        }
         function prevPlayer() { carouselIndex = (carouselIndex - 1 + players.length) % players.length; updateCarousel(); }
         function nextPlayer() { carouselIndex = (carouselIndex + 1) % players.length; updateCarousel(); }
         function openProfileFromCarousel() { openProfileModal(players[carouselIndex].id); }
@@ -513,7 +544,9 @@
         function openProfileModal(id) { 
             viewingPlayerId = id;
             const p = players.find(x=>x.id===id); 
-            document.getElementById('profile-avatar').innerText=p.avatar; document.getElementById('profile-avatar').style.background=p.color; document.getElementById('profile-name').innerText=p.name; document.getElementById('profile-summary').innerText=`当前赛季: ${p.points}分 | ${p.wins}胜 ${p.losses}负`; 
+            document.getElementById('profile-avatar').innerText=p.avatar; document.getElementById('profile-avatar').style.background=p.color; document.getElementById('profile-name').innerText=p.name; 
+            // 资料卡也展示平局
+            document.getElementById('profile-summary').innerText=`当前赛季: ${p.points}分 | ${p.wins}胜 ${p.draws}平 ${p.losses}负`; 
             toggleEditStats(false); // 默认展示图表
             renderRadarChart(p); 
             document.getElementById('profileModal').style.display='flex'; 
